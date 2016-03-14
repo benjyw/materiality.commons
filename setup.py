@@ -1,8 +1,7 @@
 # coding=utf-8
 # Copyright 2016 Materiality Labs.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+# Note that setup expects string literals throughout and can fail in odd ways if provided with unicode.
 
 from setuptools import setup, find_packages
 
@@ -10,7 +9,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'materiality.commons',
   packages = find_packages('src/python'),
-  package_dir = {'': b'src/python'},
+  package_dir = {'': 'src/python'},
   install_requires=[
     'ansicolors>=1.0.2,<2.0',
     'Django>=1.7,<2.0',
@@ -19,7 +18,7 @@ setup(
     'requests>=2.8,<3.0',
   ],
   test_suite='materiality.commons',
-  version = '0.1.3',
+  version = '0.1.4',
   description = "Common code for Materiality Labs's Django/Postgres apps.",
   author = 'Benjy Weinberger',
   author_email = 'benjyw@gmail.com',
