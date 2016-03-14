@@ -4,6 +4,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+import os
 import shlex
 import subprocess
 
@@ -24,12 +25,18 @@ def _munge_cmd(cmd):
   return args
 
 
-def execute(cmd):
-  subprocess.check_call(_munge_cmd(cmd))
+def _update_env(env):
+  full_env = dict(os.environ)
+  if env:
+    full_env.update(env)
+  return full_env
+
+def execute(cmd, env=None):
+  subprocess.check_call(_munge_cmd(cmd), env=_update_env(env))
 
 
-def get_output(cmd):
-  return subprocess.check_output(_munge_cmd(cmd))
+def get_output(cmd, env=None):
+  return subprocess.check_output(_munge_cmd(cmd), env=env)
 
 
 def execute_postgres(cmd):

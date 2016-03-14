@@ -43,7 +43,9 @@ def verify_venv():
 
 def verify_python_dependencies():
   print(green('\nVerifying python dependencies:'))
-  execute('./venv/bin/pip install -r requirements.txt')
+  # Note that we scrub the PYTHONPATH in case we're run in a bootstrap script
+  # that sets it to a bootstrap version of materiality.commons.
+  execute('./venv/bin/pip install -r requirements.txt', env={'PYTHONPATH': ''})
   print(green('Python dependencies installed.'))
 
 
