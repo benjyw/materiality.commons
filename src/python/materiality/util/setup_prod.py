@@ -6,16 +6,14 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 
 import os
 
-import sys
 from colors import green
 
 from materiality.util.execute import execute, get_output
 from materiality.util.prompt import get_secret_key
+from materiality.util.setup import Setup
 
 
-class SetupProd(object):
-  _local_settings_file = 'main/settings_local.py'
-
+class SetupProd(Setup):
   @staticmethod
   def get_current_heroku_config():
     lines = get_output('heroku config').strip().split('\n')[1:]
@@ -25,17 +23,14 @@ class SetupProd(object):
 
   @classmethod
   def get_config_from_local_settings(cls, key):
-    if os.path.exists(cls._local_settings_file):
+    if os.path.exists(cls.local_settings_file):
       settings = {}
-      execfile(cls._local_settings_file, settings)
+      execfile(cls.local_settings_file, settings)
       if key in settings:
         print(green('Reading {} from settings file.'.format(key)))
         return settings[key]
     print(green('{} not in local settings file.'.format(key)))
     return raw_input(green('Paste {}: '.format(key)))
-
-  def __init__(self, app_name):
-    self._app_name = app_name.lower()
 
   def update_heroku_config(self):
     current_config = self.get_current_heroku_config()
@@ -58,15 +53,34 @@ class SetupProd(object):
       do_update(key, self.get_config_from_local_settings)
 
     do_set('SECRET_KEY', lambda(k): get_secret_key())
-    do_update('{}_ENV'.format(self._app_name.upper()), '{}_prod'.format(self._app_name))
-    do_update('NEW_RELIC_APP_NAME', self._app_name)
-    do_update_from_local_settings('TWITTER_APP_ID')
-    do_update_from_local_settings('TWITTER_APP_SECRET')
-    do_update_from_local_settings('TWITTER_APP_SECRET')
+    do_update('{}_ENV'.format(self.app_name.upper()), '{}_prod'.format(self.app_name))
+    do_update('NEW_RELIC_APP_NAME', self.app_name)
+    if self.twitter_api:
+      do_update_from_local_settings('TWITTER_APP_ID')
+      do_update_from_local_settings('TWITTER_APP_SECRET')
+      do_update_from_local_settings('TWITTER_APP_SECRET')
     do_update_from_local_settings('NEWRELIC_API_KEY')
+    for name in self.extra_local_settings():
+      do_update_from_local_settings(name)
+
+  def update_buildpacks(self):
+    execute('heroku buildpacks:clear')
+    execute('heroku buildpacks:set heroku/python')
+    for cmd in self.extra_buildpack_commands():
+      execute(cmd)
+
+  def extra_buildpack_commands(self):
+    """Override to add any extra buildpacks."""
+    return []
+
+  def extra_local_settings(self):
+    """Override to provide names of any other local settings that should be copied to prod."""
+    return []
+
+  def setup(self):
+    self.update_heroku_config()
+    self.update_buildpacks()
 
 
 if __name__ == '__main__':
-  if len(sys.argv) != 2:
-    raise Exception('Expected exactly one cmd-line arg, specifying the app name.')
-  SetupProd(sys.argv[1]).update_heroku_config()
+  SetupProd.create().setup()

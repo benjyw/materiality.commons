@@ -9,7 +9,6 @@ import os
 import textwrap
 import time
 
-import sys
 from colors import green, red, blue
 import psycopg2
 
@@ -17,12 +16,11 @@ from materiality.util.dump_production_database import default_dumpfile_path
 from materiality.util.execute import execute, execute_postgres, local_pgsql_dir
 from materiality.util.fileutil import backup, umask
 from materiality.util.prompt import confirm, get_database_password, get_secret_key
+from materiality.util.setup import Setup
 
 
-_local_settings_file = 'main/settings_local.py'
+class SetupDev(Setup):
 
-
-class SetupDev(object):
   @staticmethod
   def get_twitter_app_id():
     return raw_input(green('Paste Twitter app id: '))
@@ -42,11 +40,30 @@ class SetupDev(object):
     print('')
 
   @classmethod
-  def create_or_update_local_settings(cls):
+  def execute_sql(cls, sql, dbname='postgres'):
+    try:
+      with psycopg2.connect("dbname='{}' host='localhost'".format(dbname)) as conn:
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        cur = conn.cursor()
+        cur.execute(sql)
+    except psycopg2.Error as e:
+      print('ERROR: %s' % e)
+      return False
+    return True
+
+  @property
+  def db_name(self):
+    return self.app_name  # Name the db after the app, for simplicity.
+
+  @property
+  def db_user(self):
+    return self.app_name  # Name the user after the app, for simplicity.
+
+  def create_or_update_local_settings(self):
     print(green('\nVerifying local settings file.'))
-    if os.path.exists(_local_settings_file):
+    if os.path.exists(self.local_settings_file):
       existing_settings = {}
-      execfile(_local_settings_file, existing_settings)
+      execfile(self.local_settings_file, existing_settings)
       print(green('Found local settings file. Updating it.'))
     else:
       existing_settings = {}
@@ -61,13 +78,17 @@ class SetupDev(object):
 
     update_setting('SECRET_KEY', get_secret_key)
     update_setting('DEFAULT_DATABASE_PASSWORD', get_database_password)
-    update_setting('TWITTER_APP_ID', cls.get_twitter_app_id)
-    update_setting('TWITTER_APP_SECRET', cls.get_twitter_app_secret)
-    update_setting('NEWRELIC_API_KEY', cls.get_newrelic_api_key)
+    if self.twitter_api:
+      update_setting('TWITTER_APP_ID', self.get_twitter_app_id)
+      update_setting('TWITTER_APP_SECRET', self.get_twitter_app_secret)
+    update_setting('NEWRELIC_API_KEY', self.get_newrelic_api_key)
 
-    with backup(_local_settings_file) as bak:
+    for setting_name, value_func in self.extra_local_settings():
+      update_setting(setting_name, value_func)
+
+    with backup(self.local_settings_file) as bak:
       with umask(0):
-        with os.fdopen(os.open(_local_settings_file, os.O_WRONLY | os.O_CREAT, 0o400), 'w') as outfile:
+        with os.fdopen(os.open(self.local_settings_file, os.O_WRONLY | os.O_CREAT, 0o400), 'w') as outfile:
           outfile.write(textwrap.dedent("""
           # coding=utf-8
           # Copyright 2015 Materiality Labs.
@@ -82,31 +103,8 @@ class SetupDev(object):
             outfile.write("{0} = '{1}'\n".format(key, val))
 
     os.unlink(bak)
-    print(green('Wrote {0}.\n'.format(_local_settings_file)))
+    print(green('Wrote {0}.\n'.format(self.local_settings_file)))
     return updated_settings
-
-  @classmethod
-  def execute_sql(cls, sql):
-    try:
-      with psycopg2.connect("dbname='postgres' host='localhost'") as conn:
-        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
-        cur.execute(sql)
-    except psycopg2.Error as e:
-      print('ERROR: %s' % e)
-      return False
-    return True
-
-  def __init__(self, app_name):
-    self._app_name = app_name.lower()
-
-  @property
-  def db_name(self):
-    return self._app_name  # Name the db after the app, for simplicity.
-
-  @property
-  def db_user(self):
-    return self._app_name  # Name the user after the app, for simplicity.
 
   def setup_postgres(self, default_pwd):
     print(green('Verifying local postgres database.'))
@@ -145,6 +143,15 @@ class SetupDev(object):
         print(blue('Creating database user permissions.'))
         if not self.execute_sql('GRANT ALL ON DATABASE {0} to {1}'.format(self.db_name, self.db_user)):
           raise Exception('Failed to create role.')
+        # Tests may need read access to the postgres db.
+        if not self.execute_sql('GRANT CONNECT ON DATABASE postgres to {0}'.format(self.db_user)):
+          raise Exception('Failed to grant role read access to postgres database.')
+        # Tests may need superuser access, e.g., to create the postgis extension on the temporary test db.
+        # Obviously this script should only be used to create dev databases, never production ones.
+        if not self.execute_sql('ALTER ROLE {0} SUPERUSER'.format(self.db_user)):
+          raise Exception('Failed to make role a superuser.')
+
+        self.create_postgres_extensions()
 
         if os.path.exists(default_dumpfile_path) and confirm('Detected dumpfile at {0}. Import data from it?'.format(default_dumpfile_path)):
           self.import_database_dump(default_dumpfile_path)
@@ -160,6 +167,21 @@ class SetupDev(object):
 
       print(green('Set up local postgres database at {0}.'.format(local_pgsql_dir)))
 
+  def extra_local_settings(self):
+    """Override to provide extra local settings.
+
+    Return value must be a list of pairs (name, function that returns setting value).
+    """
+    return []
+
+  def create_postgres_extensions(self):
+    """Override to set up postgres extensions, e.g., postgis."""
+    pass
+
+  def setup_client(self):
+    """Override to provide custom client setup (e.g., running npm install)."""
+    pass
+
   def import_database_dump(self, dumpfile):
     print(green('Importing data from {0}:'.format(dumpfile)))
     execute('pg_restore --verbose --no-acl --no-owner -n public -h localhost -U {0} -d {1} {2}'.format(self.db_user, self.db_name, dumpfile))
@@ -168,10 +190,9 @@ class SetupDev(object):
   def setup(self):
     settings = self.create_or_update_local_settings()
     self.setup_postgres(settings['DEFAULT_DATABASE_PASSWORD'])
+    self.setup_client()
     print(green('Done!'))
 
 
 if __name__ == '__main__':
-  if len(sys.argv) != 2:
-    raise Exception('Expected exactly one cmd-line arg, specifying the app name.')
-  SetupDev(sys.argv[1]).setup()
+  SetupDev.create().setup()
