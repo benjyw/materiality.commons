@@ -16,10 +16,10 @@ from materiality.util.dump_production_database import default_dumpfile_path
 from materiality.util.execute import execute, execute_postgres, local_pgsql_dir
 from materiality.util.fileutil import backup, umask
 from materiality.util.prompt import confirm, get_database_password, get_secret_key
-from materiality.util.setup import Setup
+from materiality.util.setup import SetupBase
 
 
-class SetupDev(Setup):
+class SetupDev(SetupBase):
 
   @staticmethod
   def get_twitter_app_id():

@@ -7,13 +7,14 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 import argparse
 
 
-class Setup(object):
+class SetupBase(object):
   local_settings_file = 'main/settings_local.py'
 
   @classmethod
   def register_cmd_line_args(cls, parser):
     parser.add_argument('--app-name', help='The name of the app.')
     parser.add_argument('--twitter-api', action='store_true', help='Whether this app uses the Twitter API.')
+    parser.add_argument('--web-concurrency', type=int, default=4, help='How many concurrent gunicorn workers to run.')
 
   @classmethod
   def create(cls, **kwargs):
@@ -26,12 +27,12 @@ class Setup(object):
   def __init__(self, args):
     if not args.app_name:
       raise Exception('app name must be specified.')
-    self._args = args
+    self.args = args
 
   @property
   def app_name(self):
-    return self._args.app_name
+    return self.args.app_name
 
   @property
   def twitter_api(self):
-    return self._args.twitter_api
+    return self.args.twitter_api
