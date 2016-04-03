@@ -10,7 +10,7 @@ from colors import green
 
 from materiality.util.execute import execute, get_output
 from materiality.util.prompt import get_secret_key
-from materiality.util.setup import SetupBase
+from materiality.util.setup_base import SetupBase
 
 
 class SetupProd(SetupBase):
