@@ -74,7 +74,6 @@ class SetupProd(SetupBase):
   def update_buildpacks(self):
     execute('heroku buildpacks:clear')
     execute('heroku buildpacks:set heroku/python')
-    execute('heroku buildpacks:add --index 1 heroku/nodejs')
     for cmd in self.extra_buildpack_commands():
       execute(cmd)
 
