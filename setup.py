@@ -18,7 +18,7 @@ setup(
     'requests>=2.8,<3.0',
   ],
   test_suite='materiality.commons',
-  version = '0.1.13',
+  version = '0.1.14',
   description = "Common code for Materiality Labs's Django/Postgres apps.",
   author = 'Benjy Weinberger',
   author_email = 'benjyw@gmail.com',
