@@ -14,7 +14,6 @@ class SetupBase(object):
   def register_cmd_line_args(cls, parser):
     parser.add_argument('--app-name', help='The name of the app.')
     parser.add_argument('--twitter-api', action='store_true', help='Whether this app uses the Twitter API.')
-    parser.add_argument('--web-concurrency', type=int, default=4, help='How many concurrent gunicorn workers to run.')
 
   @classmethod
   def create(cls, **kwargs):
