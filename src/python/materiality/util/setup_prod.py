@@ -17,7 +17,7 @@ class SetupProd(SetupBase):
   @classmethod
   def register_cmd_line_args(cls, parser):
     super(SetupProd, cls).register_cmd_line_args(parser)
-    parser.add_argument('--web-concurrency', type=int, default=4, help='How many concurrent gunicorn workers to run.')
+    parser.add_argument('--web-concurrency', type=int, default=2, help='How many concurrent gunicorn workers to run.')
 
   @staticmethod
   def get_current_heroku_config():
