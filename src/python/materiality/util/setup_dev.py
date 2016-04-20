@@ -102,7 +102,8 @@ class SetupDev(SetupBase):
           for key, val in updated_settings.items():
             outfile.write("{0} = '{1}'\n".format(key, val))
 
-    os.unlink(bak)
+    if bak:
+      os.unlink(bak)
     print(green('Wrote {0}.\n'.format(self.local_settings_file)))
     return updated_settings
 

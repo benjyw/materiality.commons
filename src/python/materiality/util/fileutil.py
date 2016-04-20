@@ -17,9 +17,12 @@ def umask(mask):
 
 @contextmanager
 def backup(path):
-  bak = path + '.bak'
-  os.rename(path, bak)
-  yield bak  # Caller decides when to delete bak.
+  if os.path.exists(path):
+    bak = path + '.bak'
+    os.rename(path, bak)
+    yield bak  # Caller decides when to delete bak.
+  else:
+    yield None
 
 
 @contextmanager
