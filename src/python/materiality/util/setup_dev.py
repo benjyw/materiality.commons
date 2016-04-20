@@ -168,6 +168,11 @@ class SetupDev(SetupBase):
 
       print(green('Set up local postgres database at {0}.'.format(local_pgsql_dir)))
 
+  def setup_superuser(self):
+    if not confirm('Do you want to create a superuser?'):
+      return
+    execute('./manage.py createsuperuser')
+
   def extra_local_settings(self):
     """Override to provide extra local settings.
 
@@ -191,6 +196,7 @@ class SetupDev(SetupBase):
   def setup(self):
     settings = self.create_or_update_local_settings()
     self.setup_postgres(settings['DEFAULT_DATABASE_PASSWORD'])
+    self.setup_superuser()
     self.setup_client()
     print(green('Done!'))
 
