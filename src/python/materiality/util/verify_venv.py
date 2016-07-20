@@ -5,6 +5,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 import subprocess
+import sys
 
 # All other scripts run in a venv with the necessary deps installed. However this script creates that venv,
 # and so can't rely on any deps existing. Still, we try to import from colors, in case we have it, as a nice-to-have.
@@ -37,7 +38,7 @@ def verify_venv():
     execute('./venv/bin/python2.7 --version')
   except OSError, subprocess.CalledProcessError:
     print(green('Creating venv.'))
-    execute('virtualenv venv')
+    execute('virtualenv -p {} venv'.format(sys.executable))
   print(green('Venv created.\n'))
 
 
