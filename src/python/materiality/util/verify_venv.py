@@ -26,7 +26,7 @@ def verify_virtualenv():
     execute('virtualenv --version')
   except (OSError, subprocess.CalledProcessError):
     print(green('Installing virtualenv.'))
-    execute('sudo pip install "virtualenv>=1.11,<1.12"')
+    execute('sudo pip install --upgrade virtualenv')
   print(green('virtualenv installed.'))
 
 
@@ -35,7 +35,7 @@ def verify_venv():
   print(green('\nVerifying venv.'))
   try:
     print(green('Checking venv python version.'))
-    execute('./venv/bin/python2.7 --version')
+    execute('./venv/bin/python --version')
   except OSError, subprocess.CalledProcessError:
     print(green('Creating venv.'))
     execute('virtualenv -p {} venv'.format(sys.executable))
