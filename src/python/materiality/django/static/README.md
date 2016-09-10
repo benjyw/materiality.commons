@@ -19,7 +19,7 @@ not have the option to modify the `collectstatic` invocation used during deploym
 
 ## Solution
 
-The `superstatic` app provides an enhanced `collectstatic` command, which can read ignore patterns from a file, 
+The `materiality.django.static` app provides an enhanced `collectstatic` command, which can read ignore patterns from a file, 
 and apply them without requiring any extra command-line arguments.
 
 To use this in your Django project:
