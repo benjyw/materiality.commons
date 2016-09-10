@@ -81,7 +81,6 @@ class SetupDev(SetupBase):
     if self.twitter_api:
       update_setting('TWITTER_APP_ID', self.get_twitter_app_id)
       update_setting('TWITTER_APP_SECRET', self.get_twitter_app_secret)
-    update_setting('NEWRELIC_API_KEY', self.get_newrelic_api_key)
 
     for setting_name, value_func in self.extra_local_settings():
       update_setting(setting_name, value_func)
@@ -171,7 +170,17 @@ class SetupDev(SetupBase):
   def setup_superuser(self):
     if not confirm('Do you want to create a superuser?'):
       return
-    execute('./manage.py createsuperuser')
+    print(blue('Starting database server.'))
+    execute_postgres('start')
+    try:
+      execute('./manage.py createsuperuser')
+    except Exception as e:
+      print(red('ERROR: %s' % e))
+      raise
+    finally:
+      print(blue('Stopping database server.'))
+      execute_postgres('stop')
+    print(green('Created superuser.'))
 
   def extra_local_settings(self):
     """Override to provide extra local settings.
@@ -196,7 +205,6 @@ class SetupDev(SetupBase):
   def setup(self):
     settings = self.create_or_update_local_settings()
     self.setup_postgres(settings['DEFAULT_DATABASE_PASSWORD'])
-    self.setup_superuser()
     self.setup_client()
     print(green('Done!'))
 
