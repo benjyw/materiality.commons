@@ -205,6 +205,7 @@ class SetupDev(SetupBase):
   def setup(self):
     settings = self.create_or_update_local_settings()
     self.setup_postgres(settings['DEFAULT_DATABASE_PASSWORD'])
+    self.setup_superuser()
     self.setup_client()
     print(green('Done!'))
 
