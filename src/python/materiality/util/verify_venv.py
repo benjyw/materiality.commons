@@ -4,6 +4,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+import os
 import subprocess
 import sys
 
@@ -47,6 +48,8 @@ def verify_python_dependencies():
   # Note that we scrub the PYTHONPATH in case we're run in a bootstrap script
   # that sets it to a bootstrap version of materiality.commons.
   execute('./venv/bin/pip install -r requirements.txt', env={'PYTHONPATH': ''})
+  if os.path.exists('requirements.dev.txt'):
+    execute('./venv/bin/pip install -r requirements.dev.txt', env={'PYTHONPATH': ''})
   print(green('Python dependencies installed.'))
 
 
